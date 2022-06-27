@@ -24,10 +24,10 @@
 ;;
 ;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
 ;; font string. You generally only need these two:
-(setq doom-font (font-spec :family "DejaVu Sans Mono" :size 15 :weight 'normal)
-      doom-variable-pitch-font (font-spec :family "DejaVu Sans Mono" :size 16))
+(setq doom-font (font-spec :family "DejaVu Sans Mono" :size 20 :weight 'normal)
+      doom-variable-pitch-font (font-spec :family "DejaVu Sans Mono" :size 21))
 
-;; There are two ways to load a theme. Both assume the theme is installed and
+;; THERE are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
 (setq doom-theme 'doom-fd)
@@ -112,6 +112,7 @@
   (setq lsp-pylsp-plugins-pydocstyle-enabled nil)
   (setq lsp-pylsp-plugins-pyflakes-enabled nil)
   (setq lsp-pylsp-plugins-flake8-enabled t)
+  (add-hook! 'python-mode-hook #'python-black-on-save-mode)
   )
 
 ;; (add-hook 'c-common-mode-hook
@@ -125,8 +126,9 @@
 (setq abbrev-file-name "~/.emacs.d/.abbrev_defs")
 
 (setq company-idle-delay 1.0)
-;; (setq doom-localleader-key ",")
+;; (setq doom-localleader-key "\\")
 ;; (setq doom-localleader-alt-key "M-,")
+;;
 ;;
 ;; https://stackoverflow.com/questions/16770868/org-babel-doesnt-load-graphviz-editing-mode-for-dot-sources
 ;; https://orgmode.org/worg/org-contrib/babel/languages/ob-doc-dot.html
@@ -134,3 +136,16 @@
 (require 'ob-dot)
 (add-to-list 'org-src-lang-modes '("dot" . graphviz-dot))
 (org-babel-do-load-languages 'org-babel-load-languages '((dot . t)))
+
+;; Zig ZLS setup
+(use-package! zig-mode
+  :hook ((zig-mode . lsp-deferred))
+  :custom (zig-format-on-save nil)
+  :config
+  (after! lsp-mode
+    (add-to-list 'lsp-language-id-configuration '(zig-mode . "zig"))
+    (lsp-register-client
+      (make-lsp-client
+        :new-connection (lsp-stdio-connection "zls")
+        :major-modes '(zig-mode)
+        :server-id 'zls))))
