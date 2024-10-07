@@ -5,7 +5,7 @@
 
 
 ;; Some functionality uses this to identify you, e.g. GPG configuration, email
-;; clients, file templates and snippets.
+;; clients, file templates snippets and.
 (setq user-full-name "Fredrik Dyrkell"
       user-mail-address "fredrik.dyrkell@1928diagnostics.com")
 
@@ -25,17 +25,26 @@
 ;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
 ;; font string. You generally only need these two:
 (setq doom-font (font-spec :family "DejaVu Sans Mono" :size 20 :weight 'normal)
-      doom-variable-pitch-font (font-spec :family "DejaVu Sans Mono" :size 21))
+      doom-variable-pitch-font (font-spec :family "DejaVu Sans Mono" :size 20))
 
 ;; THERE are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
+;;
+;;
+;;(setq doom-theme 'doom-monokai-pro)
+;;(setq doom-monokai-pro-padded-modeline t)
+;;
 (setq doom-theme 'doom-fd)
 (setq doom-fd-brighter-comments t)
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/Documents/projects/1928/docs")
+(setq org-directory "/home/fredyr/Documents/1928/docs")
+
+(setq deft-directory "/home/fredyr/Documents/1928/docs"
+      deft-extensions '("org" "txt")
+      deft-recursive t)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -62,10 +71,13 @@
 ;; (use-package! evil-colemak-basics
 ;;   :after evil
 ;;   :config
-;;   ;(setq evil-colemak-basics-rotate-t-f-j t)
+;;   (setq evil-colemak-basics-rotate-t-f-j t)
+;;   (setq evil-colemak-basics-layout-mod 'mod-dh)
 ;;   )
 ;; (after! evil (global-evil-colemak-basics-mode))
-;; (setq evil-colemak-basics-layout-mod 'mod-dh)
+
+;; (setq avy-keys '(?a ?r ?s ?t ?g ?m ?n ?e ?i ?o))
+;; (setq avy-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)
 
 (defun append-semicolon ()
   (interactive)
@@ -74,65 +86,53 @@
   (insert ";")
   (evil-normal-state))
 
-(define-key evil-motion-state-map "H" 'evil-first-non-blank)
-(define-key evil-motion-state-map "L" 'evil-end-of-line)
+(defun cargo-test-nocapture ()
+  (interactive)
+  (shell-command "cargo test -- --nocapture"))
 
-(global-set-key (kbd "C-<left>") 'sp-forward-barf-sexp)
-(global-set-key (kbd "C-<right>") 'sp-forward-slurp-sexp)
-(global-set-key (kbd "C-;") 'append-semicolon)
+(use-package avy :ensure t :demand t
+  :init
+  (avy-setup-default)
+  :config
+  (defun avy-goto-parens ()
+    (interactive)
+    (let ((avy-command this-command))   ; for look up in avy-orders-alist
+      (avy-jump "(+"))))
+
+(map! :after rust
+      :map rust-mode-map
+      :localleader
+      ;; <localleader> x will invoke the dosomething command
+      (:prefix "t"
+       :desc "all --nocapture" "r" #'cargo-run-nocapture)
+      )
+
+(define-key evil-motion-state-map "H" 'doom/backward-to-bol-or-indent)
+(define-key evil-motion-state-map "L" 'doom/forward-to-last-non-comment-or-eol)
+
+;; https://github.com/danielmt/doom-emacs-config/blob/master/modules/private/personal/%2Bbindings.el
+(map! "C-:"  #'append-semicolon)
+(map! :after evil
+      :nv "g h" #'doom/backward-to-bol-or-indent
+      :nv "g l" #'doom/forward-to-last-non-comment-or-eol
+      :nv "g s p" #'avy-goto-parens)
+
+(sp-use-smartparens-bindings)
 
 (setq evil-move-cursor-back nil)
 (setq evil-move-beyond-eol t)
 
-(add-hook! smartparens-mode
-  (smartparens-strict-mode)
-  (electric-pair-mode))
+(require 'magit)
+(setq magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1)
 
-;; https://github.com/hlissner/doom-emacs/issues/478
-(after! smartparens
-  (dolist (brace '("(" "{" "["))
-    (sp-pair brace nil :unless '(:rem sp-point-before-word-p sp-point-before-same-p))
-    ;; (sp-with-modes 'org-mode
-    ;;   (sp-local-pair "<" nil :actions :rem))
-    ))
-
-
-;; python black settings
-;; taken from https://gist.github.com/jordangarrison/8720cf98126a1a64890b2f18c1bc69f5
-;; (use-package! python-black
-;;   :demand t
-;;   :after python)
-;; (add-hook! 'python-mode-hook #'python-black-on-save-mode)
-;; (setq blacken-line-length 100)
-;; (setq blacken-skip-string-normalization t)
-
-(after! python
-  (setq python-black-extra-args '("--skip-string-normalization" "--line-length" "100"))
-  (setq python-shell-interpreter "python3")
-  (setq lsp-pylsp-plugins-pydocstyle-enabled nil)
-  (setq lsp-pylsp-plugins-pyflakes-enabled nil)
-  (setq lsp-pylsp-plugins-flake8-enabled t)
-  (add-hook! 'python-mode-hook #'python-black-on-save-mode)
-  )
-
-;; (add-hook 'c-common-mode-hook
-;;   (lambda ()
-;;     (add-hook (make-local-variable 'before-save-hook)
-;;               'clang-format-buffer)))
-;; (map! :leader :desc "Comment line" "c l " #'comment-line)
-;; (add-hook! 'before-save-hook #'+format/buffer)
-;; (remove-hook! 'before-save-hook #'+format/buffer)
-;;
 (setq abbrev-file-name "~/.emacs.d/.abbrev_defs")
+(setq abbrev-suggest t)
+(setq abbrev-suggest-hint-threshold 2)
 
-(setq company-idle-delay 1.0)
-;; (setq doom-localleader-key "\\")
-;; (setq doom-localleader-alt-key "M-,")
-;;
-;;
+(setq company-idle-delay 0.0)
+
 ;; https://stackoverflow.com/questions/16770868/org-babel-doesnt-load-graphviz-editing-mode-for-dot-sources
 ;; https://orgmode.org/worg/org-contrib/babel/languages/ob-doc-dot.html
-;;
 (require 'ob-dot)
 (add-to-list 'org-src-lang-modes '("dot" . graphviz-dot))
 (org-babel-do-load-languages 'org-babel-load-languages '((dot . t)))
@@ -145,7 +145,61 @@
   (after! lsp-mode
     (add-to-list 'lsp-language-id-configuration '(zig-mode . "zig"))
     (lsp-register-client
-      (make-lsp-client
-        :new-connection (lsp-stdio-connection "zls")
-        :major-modes '(zig-mode)
-        :server-id 'zls))))
+     (make-lsp-client
+      :new-connection (lsp-stdio-connection "zls")
+      :major-modes '(zig-mode)
+      :server-id 'zls))))
+
+(use-package esh-autosuggest
+  :hook (eshell-mode . esh-autosuggest-mode)
+  ;; If you have use-package-hook-name-suffix set to nil, uncomment and use the
+  ;; line below instead:
+  ;; :hook (eshell-mode-hook . esh-autosuggest-mode)
+  :ensure t)
+(setq evil-collection-company-use-tng nil)
+
+(setq lsp-enable-file-watchers nil)
+
+;; add to $DOOMDIR/config.el
+(after! dap-mode
+  (setq dap-python-debugger 'debugpy))
+
+(use-package! gptel
+  :config
+  (setq
+   gptel-default-mode #'org-mode
+   gptel-model "gemini-1.5-flash"
+   gptel-backend (gptel-make-gemini "Gemini"
+                   :key "AIzaSyAOcFOP8vTKZUcIDYao7HDlWmn9BB5nEWY"
+                   :stream t)))
+
+(use-package macrursors
+  :config
+  (dolist (mode '(corfu-mode goggles-mode beacon-mode))
+    (add-hook 'macrursors-pre-finish-hook mode)
+    (add-hook 'macrursors-post-finish-hook mode))
+  (define-prefix-command 'macrursors-mark-map)
+  (global-set-key (kbd "C-c SPC") #'macrursors-select)
+  (global-set-key (kbd "C->") #'macrursors-mark-next-instance-of)
+  (global-set-key (kbd "C-<") #'macrursors-mark-previous-instance-of)
+  (global-set-key (kbd "C-;") 'macrursors-mark-map)
+  (define-key macrursors-mark-map (kbd "C-;") #'macrursors-mark-all-lines-or-instances)
+  (define-key macrursors-mark-map (kbd ";") #'macrursors-mark-all-lines-or-instances)
+  (define-key macrursors-mark-map (kbd "l") #'macrursors-mark-all-lists)
+  (define-key macrursors-mark-map (kbd "s") #'macrursors-mark-all-symbols)
+  (define-key macrursors-mark-map (kbd "e") #'macrursors-mark-all-sexps)
+  (define-key macrursors-mark-map (kbd "f") #'macrursors-mark-all-defuns)
+  (define-key macrursors-mark-map (kbd "n") #'macrursors-mark-all-numbers)
+  (define-key macrursors-mark-map (kbd ".") #'macrursors-mark-all-sentences)
+  (define-key macrursors-mark-map (kbd "r") #'macrursors-mark-all-lines)
+  )
+
+(after! org-superstar
+  (setq-default org-superstar-headline-bullets-list '("►" "•" "▸" "✸"))
+  (setq prettify-symbols-alist
+        (map-merge 'list prettify-symbols-alist
+                   `(("#+begin_src" . "▹")
+                     ("#+end_src" . "◃")
+                     ("#+results:" . "□"))
+                   )))
+;; ("◉" "⁑" "⁂" "❖" "✮" "✱" "✸")
