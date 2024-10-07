@@ -2,7 +2,12 @@
 
 ;; Place your private configuration here! Remember, you do not need to run 'doom
 ;; sync' after modifying this file!
+(defun load-if-exists (f)
+  (if (file-exists-p (expand-file-name f))
+      (load-file (expand-file-name f))))
 
+;; (load-if-exists "~/.emacs.d/secrets.el.gpg")
+(load-if-exists "secrets.el")
 
 ;; Some functionality uses this to identify you, e.g. GPG configuration, email
 ;; clients, file templates snippets and.
@@ -13,6 +18,8 @@
        (setq mac-command-modifier      'control
              mac-option-modifier       'meta
              mac-right-option-modifier 'alt)))
+
+
 
 ;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
 ;; are the three important ones:
@@ -170,7 +177,7 @@
    gptel-default-mode #'org-mode
    gptel-model "gemini-1.5-flash"
    gptel-backend (gptel-make-gemini "Gemini"
-                   :key "AIzaSyAOcFOP8vTKZUcIDYao7HDlWmn9BB5nEWY"
+                   :key fd-gemini-api-key
                    :stream t)))
 
 (use-package macrursors
